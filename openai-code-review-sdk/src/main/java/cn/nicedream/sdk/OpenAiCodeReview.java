@@ -116,7 +116,7 @@ public class OpenAiCodeReview {
     private static String writeLog(String token, String log) throws Exception {
 
         Git git = Git.cloneRepository()
-                .setURI("https://github.com/nicedream18/openai-code-review-log")
+                .setURI("https://github.com/nicedream18/openai-code-review-log.git")
                 .setDirectory(new File("repo"))
                 .setCredentialsProvider(new UsernamePasswordCredentialsProvider(token, ""))
                 .call();
@@ -137,7 +137,7 @@ public class OpenAiCodeReview {
         git.commit().setMessage("Add new file").call();
         git.push().setCredentialsProvider(new UsernamePasswordCredentialsProvider(token, ""));
 
-        return "https://github.com/nicedream18/openai-code-review-log/blob/master/" + dateFolderName + "/" + fileName;
+        return "https://github.com/nicedream18/openai-code-review-log.git/blob/master/" + dateFolderName + "/" + fileName;
     }
 
     private static String generateRandomString(int length) {
