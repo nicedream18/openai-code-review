@@ -31,5 +31,4 @@ jobs:
            java cn.nicedream.sdk.OpenAiCodeReview
         env:
           GITHUB_TOKEN: ${{ secrets.CODE_TOKEN }}
-          API_KEY_SECRET: ${{ secrets.API_KEY_SECRET }}
           LOG_REPO_BRANCH: main
