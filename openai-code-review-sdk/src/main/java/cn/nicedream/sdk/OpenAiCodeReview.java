@@ -163,6 +163,7 @@ public class OpenAiCodeReview {
             // 克隆仓库
             git = Git.cloneRepository()
                     .setURI(LOG_REPO_URL)
+                    .setBranch("refs/heads/" + branch)
                     .setDirectory(new File("repo"))
                     .setCredentialsProvider(new UsernamePasswordCredentialsProvider(token, ""))
                     .call();

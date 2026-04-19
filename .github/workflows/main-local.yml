@@ -29,3 +29,7 @@ jobs:
            cd openai-code-review-sdk/src/main/java
            javac cn/nicedream/sdk/OpenAiCodeReview.java
            java cn.nicedream.sdk.OpenAiCodeReview
+        env:
+          GITHUB_TOKEN: ${{ secrets.CODE_TOKEN }}
+          API_KEY_SECRET: ${{ secrets.API_KEY_SECRET }}
+          LOG_REPO_BRANCH: main
