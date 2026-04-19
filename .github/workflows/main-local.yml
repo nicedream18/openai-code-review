@@ -24,11 +24,14 @@ jobs:
           distribution: 'temurin'  # 你可以选择其他发行版，如 'adopt' 或 'zulu'
           java-version: '11'
 
-      - name: Run Java code
-        run: |
-           cd openai-code-review-sdk/src/main/java
-           javac cn/nicedream/sdk/OpenAiCodeReview.java
-           java cn.nicedream.sdk.OpenAiCodeReview
+      - name: Build with Maven
+        run: mvn clean install
+
+      - name: Copy openai-code-review-sdk JAR
+        run: mvn dependency:copy -Dartifact=cn.nicedream:openai-code-review-sdk:1.0 -DoutputDirectory=./libs
+
+      - name: Run code Review
+        run: java -jar ./libs/openai-code-review-sdk-1.0.jar
         env:
           GITHUB_TOKEN: ${{ secrets.CODE_TOKEN }}
           LOG_REPO_BRANCH: main
