@@ -12,6 +12,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 public class ApiTest {
     @Test
     public void testApi() {
-        System.out.println(Integer.parseInt("aaaa555555"));
+        System.out.println(Integer.parseInt("aaaa1555555"));
     }
 }
