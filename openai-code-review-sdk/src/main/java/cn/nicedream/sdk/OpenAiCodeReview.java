@@ -67,19 +67,29 @@ public class OpenAiCodeReview {
             private static final long serialVersionUID = -7988151926241837899L;
 
             {
-                add(new ChatCompletionRequest.Prompt("user", "你是一个高级编程架构师，精通各类场景方案、架构设计和编程语言请，请您根据git diff记录，对代码做出评审。代码如下:"));
-                add(new ChatCompletionRequest.Prompt("user", diffCode));
+                add(new ChatCompletionRequest.Prompt("user", "你是一个高级编程架构师，精通各类场景方案、架构设计和编程语言请您根据git diff记录，对代码做出评审。代码如下:\n\n" + diffCode));
             }
         });
+
+        String requestBody = JSON.toJSONString(chatCompletionRequest);
+        System.out.println("requestBody: " + requestBody);
+
         try(OutputStream os = connection.getOutputStream()){
-            byte[] input = JSON.toJSONString(chatCompletionRequest).getBytes(StandardCharsets.UTF_8);
+            byte[] input = requestBody.getBytes(StandardCharsets.UTF_8);
             os.write(input);
         }
 
         int responseCode = connection.getResponseCode();
-        System.out.println(responseCode);
+        System.out.println("HTTP responseCode: " + responseCode);
 
-        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        InputStream inputStream;
+        if (responseCode >= 400) {
+            inputStream = connection.getErrorStream();
+        } else {
+            inputStream = connection.getInputStream();
+        }
+
+        BufferedReader in = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
         String inputLine;
 
         StringBuilder content = new StringBuilder();
@@ -90,8 +100,15 @@ public class OpenAiCodeReview {
         in.close();
         connection.disconnect();
 
-        System.out.println("评审结果："+content.toString());
-        ChatCompletionSyncResponse response = JSON.parseObject(content.toString(), ChatCompletionSyncResponse.class);
+        String responseBody = content.toString();
+        System.out.println("responseBody: " + responseBody);
+
+        if (responseCode >= 400) {
+            throw new RuntimeException("API调用失败, HTTP " + responseCode + ", 响应: " + responseBody);
+        }
+
+        System.out.println("评审结果："+responseBody);
+        ChatCompletionSyncResponse response = JSON.parseObject(responseBody, ChatCompletionSyncResponse.class);
         return response.getChoices().get(0).getMessage().getContent();
     }
 }
