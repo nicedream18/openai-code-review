@@ -5,16 +5,25 @@ import cn.nicedream.sdk.domain.model.ChatCompletionSyncResponse;
 import cn.nicedream.sdk.domain.model.Model;
 import cn.nicedream.sdk.type.utils.BearerTokenUtils;
 import com.alibaba.fastjson2.JSON;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.Random;
 
 public class OpenAiCodeReview {
-    public static void main(String[] args) throws IOException, InterruptedException {
-        System.out.println("测试运行");
+    public static void main(String[] args) throws Exception {
+        System.out.println("openai代码评审,测试运行");
+        String token = System.getenv("GITHUB_TOKEN");
+        if(null == token|| token.isEmpty()){
+            throw new RuntimeException("token is null");
+        }
         // 1. 代码检出
         ProcessBuilder processBuilder = new ProcessBuilder("git", "diff", "HEAD~1", "HEAD");
         processBuilder.directory(new File("."));
@@ -38,6 +47,9 @@ public class OpenAiCodeReview {
         String log = codeReview(diffCode.toString());
         System.out.println("code review：" + log);
 
+        //3. 写入评审日志
+         writeLog(token,log);
+
     }
     private static String codeReview(String diffCode) throws IOException {
         String apiKeySecret = "201d073da3e043369d269f677726bc86.tushBH9GlzPZTubn";
@@ -49,17 +61,6 @@ public class OpenAiCodeReview {
         connection.setRequestProperty("Authorization", "Bearer " + token);
         connection.setRequestProperty("Content-Type", "application/json");
         connection.setDoOutput(true);
-
-
-//        String jsonInpuString = "{"
-//                + "\"model\":\"glm-4-flash\","
-//                + "\"messages\": ["
-//                + "    {"
-//                + "        \"role\": \"user\","
-//                + "        \"content\": \"你是一个高级编程架构师，精通各类场景方案、架构设计和编程语言请，请您根据git diff记录，对代码做出评审。代码为: " + diffCode + "\""
-//                + "    }"
-//                + "]"
-//                + "}";
 
         ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest();
         chatCompletionRequest.setModel(Model.GLM_4_FLASH.getCode());
@@ -110,5 +111,42 @@ public class OpenAiCodeReview {
         System.out.println("评审结果："+responseBody);
         ChatCompletionSyncResponse response = JSON.parseObject(responseBody, ChatCompletionSyncResponse.class);
         return response.getChoices().get(0).getMessage().getContent();
+    }
+
+    private static String writeLog(String token, String log) throws Exception {
+
+        Git git = Git.cloneRepository()
+                .setURI("https://github.com/nicedream18/openai-code-review-log")
+                .setDirectory(new File("repo"))
+                .setCredentialsProvider(new UsernamePasswordCredentialsProvider(token, ""))
+                .call();
+
+        String dateFolderName = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
+        File dateFolder = new File("repo/" + dateFolderName);
+        if (!dateFolder.exists()) {
+            dateFolder.mkdirs();
+        }
+
+        String fileName = generateRandomString(12) + ".md";
+        File newFile = new File(dateFolder, fileName);
+        try (FileWriter writer = new FileWriter(newFile)) {
+            writer.write(log);
+        }
+
+        git.add().addFilepattern(dateFolderName + "/" + fileName).call();
+        git.commit().setMessage("Add new file").call();
+        git.push().setCredentialsProvider(new UsernamePasswordCredentialsProvider(token, ""));
+
+        return "https://github.com/nicedream18/openai-code-review-log/blob/master/" + dateFolderName + "/" + fileName;
+    }
+
+    private static String generateRandomString(int length) {
+        String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        Random random = new Random();
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            sb.append(characters.charAt(random.nextInt(characters.length())));
+        }
+        return sb.toString();
     }
 }
